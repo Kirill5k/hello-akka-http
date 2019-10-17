@@ -3,6 +3,7 @@ package io.kirill.helloakkahttp.lowlevel
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.IncomingConnection
+import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink}
@@ -92,7 +93,15 @@ object SimpleServer extends App {
   val streamsBasedRequestHandler: Flow[HttpRequest, HttpResponse, _] = Flow[HttpRequest].map{
     case HttpRequest(HttpMethods.GET, Uri.Path("/home"), _, _, _) =>
       HttpResponse(
-        StatusCodes.OK,
+        entity = HttpEntity(
+          ContentTypes.`application/json`,
+          """{"hello": "streams world"}"""
+        )
+      )
+    case HttpRequest(HttpMethods.GET, Uri.Path("/search"), _, _, _) =>
+      HttpResponse(
+        StatusCodes.Found,
+        headers = List(Location("http://google.com")),
         entity = HttpEntity(
           ContentTypes.`application/json`,
           """{"hello": "streams world"}"""
@@ -120,5 +129,8 @@ object SimpleServer extends App {
 //  Http().bind("localhost", 8082).runForeach { connection =>
 //    connection.handleWith(streamsBasedRequestHandler)
 //  }
-  Http().bindAndHandle(streamsBasedRequestHandler, "localhost", 8082)
+  val bindingFuture = Http().bindAndHandle(streamsBasedRequestHandler, "localhost", 8082)
+  bindingFuture
+    .flatMap(binding => binding.unbind())
+    .onComplete(_ => system.terminate())
 }
