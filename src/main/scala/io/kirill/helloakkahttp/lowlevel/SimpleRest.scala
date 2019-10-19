@@ -6,14 +6,14 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequ
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import io.kirill.helloakkahttp.lowlevel.GuitarDB.{CreateGuitar, FindAllGuitars, GuitarCreated}
+import io.kirill.helloakkahttp.lowlevel.GuitarDB.{CreateGuitar, FindAllGuitars, FindGuitar, GuitarCreated}
 import spray.json._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-case class Guitar(make: String, model: String)
+case class Guitar(make: String, model: String, quantity: Int = 0)
 
 object GuitarDB {
   case class CreateGuitar(guitar: Guitar)
@@ -43,7 +43,7 @@ class GuitarDB extends Actor with ActorLogging {
 }
 
 trait GuitarStoreJsonProtocol extends DefaultJsonProtocol {
-  implicit val guitarFormat = jsonFormat2(Guitar)
+  implicit val guitarFormat = jsonFormat3(Guitar)
   implicit val guitarCreatedFormat = jsonFormat1(GuitarCreated)
 }
 
@@ -77,8 +77,13 @@ object SimpleRest extends App with GuitarStoreJsonProtocol {
    */
   implicit val defaultTimeout = Timeout(2 seconds)
   val requestHandler: HttpRequest => Future[HttpResponse] = {
-    case HttpRequest(HttpMethods.GET, Uri.Path("/api/guitars"), _, _, _) =>
-      val guitarsFuture: Future[List[Guitar]] = (guitarDbActor ? FindAllGuitars).mapTo[List[Guitar]]
+    case HttpRequest(HttpMethods.GET, uri @ Uri.Path("/api/guitars"), _, _, _) =>
+      val query = uri.query()
+      val guitarsFuture: Future[List[Guitar]] =
+        if (query.isEmpty) (guitarDbActor ? FindAllGuitars).mapTo[List[Guitar]]
+        else query.get("id").map(_.toInt).map(guitarDbActor ? FindGuitar(_))
+          .map(_.mapTo[Option[Guitar]].map(_.map(List(_)).getOrElse(List())))
+          .getOrElse(Future{List()})
       guitarsFuture.map{ guitars =>
         HttpResponse(
           entity = HttpEntity(
