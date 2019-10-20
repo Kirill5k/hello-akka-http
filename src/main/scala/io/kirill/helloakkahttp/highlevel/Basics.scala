@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 
-object HighLevelBasics extends App {
+object Basics extends App {
   implicit val system = ActorSystem("high-level-server")
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
