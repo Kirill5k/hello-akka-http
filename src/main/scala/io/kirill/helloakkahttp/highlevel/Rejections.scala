@@ -1,10 +1,9 @@
 package io.kirill.helloakkahttp.highlevel
 
 import akka.actor.ActorSystem
-import akka.http.javadsl.server.MethodRejection
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{MissingQueryParamRejection, Rejection, RejectionHandler}
+import akka.http.scaladsl.server.{MethodRejection, MissingQueryParamRejection, Rejection, RejectionHandler}
 import akka.stream.ActorMaterializer
 
 object Rejections extends App {
