@@ -1,0 +1,9 @@
+{
+  "creditCard": {
+    "number": "1235-6322-8731-7788",
+    "cvv": "515",
+    "account": "rx-25-12-sd"
+  },
+  "receiverAccount": "rd-23-gb-67",
+  "amount": 99.99
+}
