@@ -15,6 +15,7 @@ import scala.util.{Failure, Success}
 object HostLevel extends App with PaymentJsonProtocol {
   implicit val system = ActorSystem("host-level")
   implicit val materializer = ActorMaterializer()
+  import system.dispatcher
 
   val poolFlow = Http().cachedHostConnectionPool[Int]("www.google.com")
 
@@ -31,7 +32,7 @@ object HostLevel extends App with PaymentJsonProtocol {
     .runWith(Sink.foreach[String](println))
 
 
-  def httpPostRequestToPayments(body: String): HttpRequest = HttpRequest(
+  def postRequestToPayments(body: String): HttpRequest = HttpRequest(
     HttpMethods.POST,
     uri = Uri("/api/payments"),
     entity = HttpEntity(ContentTypes.`application/json`, body)
@@ -45,7 +46,7 @@ object HostLevel extends App with PaymentJsonProtocol {
   )
 
   val paymentRequests = creditCards.map(PaymentRequest(_, "io-kirill-1", 9.99))
-  val serverRequests = paymentRequests.map(payment => (httpPostRequestToPayments(payment.toJson.prettyPrint), UUID.randomUUID().toString))
+  val serverRequests = paymentRequests.map(payment => (postRequestToPayments(payment.toJson.prettyPrint), UUID.randomUUID().toString))
 
   Source(serverRequests)
     .via(Http().cachedHostConnectionPool[String]("localhost", 8080))
