@@ -11,7 +11,7 @@ import scala.util.{Failure, Success}
 import spray.json._
 
 object ConnectionLevel extends App with PaymentJsonProtocol {
-  implicit val system = ActorSystem("web-sockets")
+  implicit val system = ActorSystem("connection-level")
   implicit val materializer = ActorMaterializer()
 
   import system.dispatcher
